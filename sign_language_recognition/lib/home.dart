@@ -15,9 +15,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // loadModel().then((val) {
-    //   setState(() {});
-    // });
+    loadModel().then((val) {
+      setState(() {});
+    });
   }
 
   @override
@@ -105,15 +105,14 @@ class _HomePageState extends State<HomePage> {
     try {
       String res;
       res = await Tflite.loadModel(
-        model: 'assets/model.tflite',
+        model: 'assets/model_unquant.tflite',
+        labels: "assets/labels.txt",
       );
-      print(res);
+      // print(res);
       // await Tflite.close();
     } catch (e) {
-      print(e);
+      // print(e);
       print("ERROR");
     }
   }
-
-  run() {}
 }
