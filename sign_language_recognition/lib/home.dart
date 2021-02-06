@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future _speak() async {
-    await flutterTts.setLanguage("hi-IN");
+    await flutterTts.setLanguage("en-US");
     await flutterTts.setPitch(0.9);
     await flutterTts
         .speak("Team D-VPN presents Gesture talk. We hope you enjoy our app");
