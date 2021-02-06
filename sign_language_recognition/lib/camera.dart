@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_language_recognition/model.dart';
 import 'dart:math' as math;
 
 import 'package:tflite/tflite.dart';
@@ -15,7 +16,10 @@ class Camera extends StatefulWidget {
 class _CameraState extends State<Camera> {
   CameraController cameraController;
   bool isDetecting = false;
-  String label;
+  String label = "";
+
+  double accuracy;
+  List<Response> responses = [];
 
   @override
   void initState() {
@@ -31,27 +35,58 @@ class _CameraState extends State<Camera> {
           return;
         }
         setState(() {});
+
         cameraController.startImageStream((CameraImage img) {
+          // int startTime = new DateTime.now().millisecondsSinceEpoch;
+
           if (!isDetecting) {
             isDetecting = true;
-            int startTime = new DateTime.now().millisecondsSinceEpoch;
             Tflite.runModelOnFrame(
               bytesList: img.planes.map((plane) {
                 return plane.bytes;
               }).toList(),
               imageHeight: img.height,
               imageWidth: img.width,
-              numResults: 2,
+              numResults: 1,
+              asynch: true,
             ).then((recognitions) {
-              // print(recognitions.first["label"]);
-              if (recognitions.length < 1)
-                setState(() {
-                  label = null;
+              if (!mounted) return;
+              // int endTime = new DateTime.now().millisecondsSinceEpoch;
+              // print("Time took for detection: ${endTime - startTime}");
+              if (recognitions.length < 1) {
+                return;
+              } else {
+                responses.add(Response(
+                  label: recognitions.first["label"],
+                  confidence: recognitions.first["confidence"] * 100,
+                ));
+              }
+              if (responses.length < 6) {
+                // return;
+              } else if (responses.length % 6 == 0) {
+                debugPrint("6");
+                int pos = responses.length - 1;
+                Map<String, int> map = {};
+                for (int i = pos; i >= pos - 5; i--) {
+                  if (map.containsKey(responses[i].label)) {
+                    map[responses[i].label] = map[responses[i].label]++;
+                  } else {
+                    map[responses[i].label] = 1;
+                  }
+                }
+                int max = 0;
+                String result = "";
+                map.entries.forEach((a) {
+                  if (a.value > max) {
+                    result = a.key;
+                    max = a.value;
+                  }
                 });
-              else
                 setState(() {
-                  label = recognitions.first["label"];
+                  label += result;
+                  accuracy = 0;
                 });
+              }
 
               isDetecting = false;
             });
@@ -102,7 +137,6 @@ class _CameraState extends State<Camera> {
             ),
             if (label != null)
               Builder(builder: (context) {
-                print("Label : " + label);
                 return Positioned(
                   bottom: 100,
                   child: Container(
@@ -123,6 +157,7 @@ class _CameraState extends State<Camera> {
                     ),
                     child: Text(
                       label,
+                      // "$label with ${accuracy.round()}% accuracy",
                       style: TextStyle(color: Colors.white),
                     ),
                   ),

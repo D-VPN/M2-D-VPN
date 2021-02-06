@@ -9,7 +9,7 @@
     
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="sign_language_recognition"
+        android:label="Be Friend"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
