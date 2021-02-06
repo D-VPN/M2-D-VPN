@@ -1,5 +1,4 @@
 # <i>Team Name:</i> D-VPN
-## ApScript Hackathon 2021 : Track - Machine Learning
 ## <i>Problem Code:</i> M2
 ## <i>Problem Statement:</i>
 Build a model to recognize the hand sign-language of deaf and dumb. Live video through mobile/web-cam should recognize the sign language in real time.
