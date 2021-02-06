@@ -21,6 +21,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    Tflite.close();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
