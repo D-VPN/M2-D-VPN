@@ -4,6 +4,7 @@ import 'package:sign_language_recognition/animations/animated_background.dart';
 import 'package:sign_language_recognition/animations/fadein.dart';
 import 'package:sign_language_recognition/camera.dart';
 import 'package:tflite/tflite.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class HomePage extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -14,8 +15,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Color color1 = Colors.white;
-  Color color2 = Colors.white;
+  final FlutterTts flutterTts = FlutterTts();
 
   @override
   void initState() {
@@ -23,6 +23,14 @@ class _HomePageState extends State<HomePage> {
     loadModel().then((val) {
       setState(() {});
     });
+    _speak();
+  }
+
+  Future _speak() async {
+    await flutterTts.setLanguage("hi-IN");
+    await flutterTts.setPitch(0.9);
+    await flutterTts
+        .speak("Team D-VPN presents Gesture talk. We hope you enjoy our app");
   }
 
   @override
@@ -43,12 +51,13 @@ class _HomePageState extends State<HomePage> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: FadeIn(
-                      delay: 2.0,
+                      delay: 10.0,
+                      duration: Duration(seconds: 1),
                       child: Container(
                         height: 330,
                         width: 200,
                         child: Image.asset(
-                          "assets/app_logo.png",
+                          "assets/app_logo_v2__1_-removebg-preview.png",
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -56,7 +65,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                   SliverToBoxAdapter(
                     child: FadeIn(
-                      delay: 6.0,
+                      delay: 12.0,
+                      duration: Duration(seconds: 1),
                       child: Container(
                         height: 50.0,
                         margin: EdgeInsets.symmetric(
@@ -134,6 +144,35 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: FadeIn(
+                      delay: 12,
+                      duration: Duration(milliseconds: 800),
+                      child: Container(
+                        margin: EdgeInsets.only(
+                            left: 40.0, right: 40.0, top: 100.0),
+                        padding: EdgeInsets.all(15.0),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.0),
+                            shape: BoxShape.rectangle,
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.08)),
+                            gradient: LinearGradient(colors: [
+                              Colors.white.withOpacity(0.2),
+                              Colors.white.withOpacity(0.05),
+                            ])),
+                        child: Container(
+                          child: Text(
+                            "We hope you enjoy our app",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
                 ],
               ),
             ),

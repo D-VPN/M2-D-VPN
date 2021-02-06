@@ -30,6 +30,7 @@ dependencies:
   tflite: ^1.1.1
   camera: 0.5.7+4
   simple_animations: ^2.5.0
+  flutter_tts: ^2.1.0
 
 dev_dependencies:
   flutter_test:

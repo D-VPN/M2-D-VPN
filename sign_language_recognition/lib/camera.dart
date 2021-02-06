@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:sign_language_recognition/model.dart';
 import 'dart:math' as math;
 
@@ -19,6 +20,8 @@ class _CameraState extends State<Camera> {
   CameraController cameraController;
   bool isDetecting = false;
   String label = "";
+  final FlutterTts flutterTts = FlutterTts();
+  bool isStart = false;
 
   double accuracy;
   List<Response> responses = [];
@@ -37,6 +40,7 @@ class _CameraState extends State<Camera> {
           return;
         }
         setState(() {});
+        if (!isStart) return;
 
         cameraController.startImageStream((CameraImage img) {
           // int startTime = new DateTime.now().millisecondsSinceEpoch;
@@ -53,8 +57,7 @@ class _CameraState extends State<Camera> {
               asynch: true,
             ).then((recognitions) {
               if (!mounted) return;
-              // int endTime = new DateTime.now().millisecondsSinceEpoch;
-              // print("Time took for detection: ${endTime - startTime}");
+              if (!isStart) return;
               if (recognitions.length < 1) {
                 return;
               } else {
@@ -85,6 +88,7 @@ class _CameraState extends State<Camera> {
                 });
                 setState(() {
                   label += result;
+                  _speak(result);
                   accuracy = 0;
                 });
               }
@@ -108,16 +112,6 @@ class _CameraState extends State<Camera> {
     if (cameraController == null || !cameraController.value.isInitialized) {
       return Container();
     }
-
-    var tmp = MediaQuery.of(context).size;
-    var screenH = math.max(tmp.height, tmp.width);
-    var screenW = math.min(tmp.height, tmp.width);
-    tmp = cameraController.value.previewSize;
-    var previewH = math.max(tmp.height, tmp.width);
-    var previewW = math.min(tmp.height, tmp.width);
-    var screenRatio = screenH / screenW;
-    var previewRatio = previewH / previewW;
-
     return SafeArea(
       child: Stack(
         children: [
@@ -127,19 +121,29 @@ class _CameraState extends State<Camera> {
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               // backgroundColor: Color(0xff64B6FF),
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Colors.blue,
+                ),
+              ),
               elevation: 0,
             ),
             body: Builder(builder: (context) {
               if (label.isEmpty) return Container();
 
-              return FadeIn(
-                delay: 0,
-                child: Container(
-                  alignment: Alignment.bottomCenter,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
+              return Container(
+                alignment: Alignment.bottomCenter,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    FadeIn(
+                      delay: 0,
+                      duration: Duration(seconds: 1),
+                      child: Container(
                         margin: EdgeInsets.symmetric(
                           vertical: 50,
                         ),
@@ -149,13 +153,20 @@ class _CameraState extends State<Camera> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30.0),
+                          shape: BoxShape.rectangle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
                           gradient: LinearGradient(
-                            colors: [Color(0xff374ABE), Color(0xff64B6FF)],
+                            colors: [
+                              Color(0xff374ABE).withOpacity(0.5),
+                              Color(0xff64B6FF).withOpacity(
+                                0.3,
+                              )
+                            ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            30.0,
                           ),
                         ),
                         child: Text(
@@ -164,8 +175,8 @@ class _CameraState extends State<Camera> {
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }),
@@ -173,5 +184,56 @@ class _CameraState extends State<Camera> {
         ],
       ),
     );
+  }
+
+  Widget buttons() {
+    return Container(
+      height: 50.0,
+      margin: EdgeInsets.symmetric(
+        horizontal: 70,
+      ),
+      child: RaisedButton(
+        onPressed: () {
+          setState(() {
+            isStart = !isStart;
+          });
+        },
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(80.0)),
+        padding: EdgeInsets.all(0.0),
+        color: Colors.white,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 300.0,
+            minHeight: 50.0,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(
+              30.0,
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 20,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            isStart ? "Stop" : "Start",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.blue,
+              fontSize: 20,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future _speak(String str) async {
+    await flutterTts.setLanguage("hi-IN");
+    await flutterTts.setPitch(0.9);
+    await flutterTts.speak(str);
   }
 }

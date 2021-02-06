@@ -6,9 +6,11 @@ enum AniProps { opacity, translateX }
 class FadeIn extends StatefulWidget {
   final double delay;
   final Widget child;
+  final Duration duration;
   FadeIn({
     Key key,
     this.delay,
+    this.duration,
     this.child,
   }) : super(key: key);
 
@@ -20,12 +22,11 @@ class _FadeInState extends State<FadeIn> {
   @override
   Widget build(BuildContext context) {
     var tween = MultiTween<AniProps>()
-      ..add(AniProps.opacity, Tween(begin: 0.0, end: 1.0),
-          Duration(milliseconds: 1000))
+      ..add(AniProps.opacity, Tween(begin: 0.0, end: 1.0), widget.duration)
       ..add(
         AniProps.translateX,
         Tween(begin: 130.0, end: 0.0),
-        Duration(milliseconds: 1000),
+        widget.duration,
         Curves.easeOut,
       );
     return PlayAnimation<MultiTweenValues<AniProps>>(
