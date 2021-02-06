@@ -9,7 +9,7 @@
     
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="Be Friend"
+        android:label="Gesture Talk"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

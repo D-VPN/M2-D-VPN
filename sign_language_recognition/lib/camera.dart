@@ -22,6 +22,7 @@ class _CameraState extends State<Camera> {
   String label = "";
   final FlutterTts flutterTts = FlutterTts();
   bool isStart = false;
+  int len = 10;
 
   double accuracy;
   List<Response> responses = [];
@@ -29,22 +30,19 @@ class _CameraState extends State<Camera> {
   @override
   void initState() {
     super.initState();
-    // print(widget.cameras.length);
     if (widget.cameras == null ?? widget.cameras.length < 1) {
       print("No camera");
     } else {
       cameraController =
-          CameraController(widget.cameras[0], ResolutionPreset.high);
+          CameraController(widget.cameras[1], ResolutionPreset.high);
       cameraController.initialize().then((_) {
         if (!mounted) {
           return;
         }
         setState(() {});
-        if (!isStart) return;
 
         cameraController.startImageStream((CameraImage img) {
-          // int startTime = new DateTime.now().millisecondsSinceEpoch;
-
+          if (!isStart) return;
           if (!isDetecting) {
             isDetecting = true;
             Tflite.runModelOnFrame(
@@ -53,11 +51,15 @@ class _CameraState extends State<Camera> {
               }).toList(),
               imageHeight: img.height,
               imageWidth: img.width,
-              numResults: 1,
+              imageMean: 140.0,
+              imageStd: 10,
               asynch: true,
             ).then((recognitions) {
               if (!mounted) return;
-              if (!isStart) return;
+              if (!isStart) {
+                isDetecting = false;
+                return;
+              }
               if (recognitions.length < 1) {
                 return;
               } else {
@@ -66,26 +68,29 @@ class _CameraState extends State<Camera> {
                   confidence: recognitions.first["confidence"] * 100,
                 ));
               }
-              if (responses.length < 6) {
+              if (responses.length < len) {
                 // return;
-              } else if (responses.length % 6 == 0) {
+              } else if (responses.length % len == 0) {
                 int pos = responses.length - 1;
                 Map<String, int> map = {};
-                for (int i = pos; i >= pos - 5; i--) {
+                for (int i = pos; i >= pos - len + 1; i--) {
                   if (map.containsKey(responses[i].label)) {
-                    map[responses[i].label] = map[responses[i].label]++;
+                    map[responses[i].label] = map[responses[i].label] + 1;
                   } else {
                     map[responses[i].label] = 1;
                   }
                 }
                 int max = 0;
                 String result = "";
+                print("\n----Start----\n");
                 map.entries.forEach((a) {
+                  print(a.key + " ${a.value}");
                   if (a.value > max) {
                     result = a.key;
                     max = a.value;
                   }
                 });
+                print("----End----");
                 setState(() {
                   label += result;
                   _speak(result);
@@ -137,6 +142,9 @@ class _CameraState extends State<Camera> {
 
               return Container(
                 alignment: Alignment.bottomCenter,
+                margin: EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -158,21 +166,21 @@ class _CameraState extends State<Camera> {
                           border: Border.all(
                             color: Colors.white.withOpacity(0.08),
                           ),
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xff374ABE).withOpacity(0.5),
-                              Color(0xff64B6FF).withOpacity(
-                                0.3,
-                              )
-                            ],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
+                          color: Colors.white.withOpacity(0.8),
+                          // gradient: LinearGradient(
+                          //   colors: [
+                          //     Color(0xff374ABE).withOpacity(0.5),
+                          //     Color(0xff64B6FF).withOpacity(
+                          //       0.3,
+                          //     )
+                          //   ],
+                          //   begin: Alignment.centerLeft,
+                          //   end: Alignment.centerRight,
+                          // ),
                         ),
                         child: Text(
                           label,
-                          // "$label with ${accuracy.round()}% accuracy",
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.blue),
                         ),
                       ),
                     ),
@@ -181,6 +189,10 @@ class _CameraState extends State<Camera> {
               );
             }),
           ),
+          Positioned(
+              right: 10,
+              top: MediaQuery.of(context).size.height / 2,
+              child: buttons()),
         ],
       ),
     );
@@ -188,14 +200,15 @@ class _CameraState extends State<Camera> {
 
   Widget buttons() {
     return Container(
-      height: 50.0,
-      margin: EdgeInsets.symmetric(
-        horizontal: 70,
-      ),
+      height: 100.0,
+      width: 100,
       child: RaisedButton(
         onPressed: () {
           setState(() {
             isStart = !isStart;
+            if (!isStart) {
+              responses.clear();
+            }
           });
         },
         shape:
@@ -203,18 +216,10 @@ class _CameraState extends State<Camera> {
         padding: EdgeInsets.all(0.0),
         color: Colors.white,
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: 300.0,
-            minHeight: 50.0,
-          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(
               30.0,
             ),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
           ),
           alignment: Alignment.center,
           child: Text(
@@ -232,7 +237,8 @@ class _CameraState extends State<Camera> {
   }
 
   Future _speak(String str) async {
-    await flutterTts.setLanguage("hi-IN");
+    if (!mounted) return;
+    await flutterTts.setLanguage("en-US");
     await flutterTts.setPitch(0.9);
     await flutterTts.speak(str);
   }
