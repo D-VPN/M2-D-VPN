@@ -5,6 +5,8 @@ import 'dart:math' as math;
 
 import 'package:tflite/tflite.dart';
 
+import 'animations/fadein.dart';
+
 class Camera extends StatefulWidget {
   final List<CameraDescription> cameras;
 
@@ -64,7 +66,6 @@ class _CameraState extends State<Camera> {
               if (responses.length < 6) {
                 // return;
               } else if (responses.length % 6 == 0) {
-                debugPrint("6");
                 int pos = responses.length - 1;
                 Map<String, int> map = {};
                 for (int i = pos; i >= pos - 5; i--) {
@@ -118,53 +119,58 @@ class _CameraState extends State<Camera> {
     var previewRatio = previewH / previewW;
 
     return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(backgroundColor: Colors.black
-            // backgroundColor: Color(0xff64B6FF),
-            // elevation: 0,
+      child: Stack(
+        children: [
+          CameraPreview(cameraController),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              // backgroundColor: Color(0xff64B6FF),
+              elevation: 0,
             ),
-        body: Stack(
-          alignment: Alignment.center,
-          children: [
-            OverflowBox(
-              maxHeight: screenRatio > previewRatio
-                  ? screenH
-                  : screenW / previewW * previewH,
-              maxWidth: screenRatio > previewRatio
-                  ? screenH / previewH * previewW
-                  : screenW,
-              child: CameraPreview(cameraController),
-            ),
-            if (label != null)
-              Builder(builder: (context) {
-                return Positioned(
-                  bottom: 100,
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xff374ABE), Color(0xff64B6FF)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
+            body: Builder(builder: (context) {
+              if (label.isEmpty) return Container();
+
+              return FadeIn(
+                delay: 0,
+                child: Container(
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        margin: EdgeInsets.symmetric(
+                          vertical: 50,
+                        ),
+                        alignment: Alignment.center,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xff374ABE), Color(0xff64B6FF)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            30.0,
+                          ),
+                        ),
+                        child: Text(
+                          label,
+                          // "$label with ${accuracy.round()}% accuracy",
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(
-                        30.0,
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      // "$label with ${accuracy.round()}% accuracy",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    ],
                   ),
-                );
-              })
-          ],
-        ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
