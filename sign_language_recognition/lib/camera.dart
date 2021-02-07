@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
+import 'package:image/image.dart' as imglib;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:sign_language_recognition/model.dart';
-import 'dart:math' as math;
 
 import 'package:tflite/tflite.dart';
 
@@ -34,27 +37,41 @@ class _CameraState extends State<Camera> {
       print("No camera");
     } else {
       cameraController =
-          CameraController(widget.cameras[1], ResolutionPreset.high);
+          CameraController(widget.cameras[0], ResolutionPreset.ultraHigh);
       cameraController.initialize().then((_) {
         if (!mounted) {
           return;
         }
         setState(() {});
 
-        cameraController.startImageStream((CameraImage img) {
+        cameraController.startImageStream((CameraImage img) async {
           if (!isStart) return;
+          // print(concatenatePlanes(img.planes).length);
+          // print(img.planes.first.bytes.length);
           if (!isDetecting) {
+            // List<int> list = await convertImageToPng(img);
+            // print(list);
+            // print(list.length);
             isDetecting = true;
+            // Tflite.runModelOnBinary(
+            //   binary: list.sublist(0, 49152),
+            // ).then((res) {
+            //   print(res.length);
+            // });
             Tflite.runModelOnFrame(
               bytesList: img.planes.map((plane) {
                 return plane.bytes;
               }).toList(),
               imageHeight: img.height,
               imageWidth: img.width,
-              imageMean: 140.0,
-              imageStd: 10,
               asynch: true,
             ).then((recognitions) {
+              print(img.format);
+              print("----Predictions-----");
+              print(recognitions.length);
+              // print(recognitions.reshape());
+              // isDetecting = false;
+              // return;
               if (!mounted) return;
               if (!isStart) {
                 isDetecting = false;
@@ -104,6 +121,12 @@ class _CameraState extends State<Camera> {
         });
       });
     }
+  }
+
+  Uint8List concatenatePlanes(List<Plane> planes) {
+    final WriteBuffer allBytes = WriteBuffer();
+    planes.forEach((Plane plane) => allBytes.putUint8List(plane.bytes));
+    return allBytes.done().buffer.asUint8List();
   }
 
   @override
@@ -234,6 +257,53 @@ class _CameraState extends State<Camera> {
         ),
       ),
     );
+  }
+
+  Future<List<int>> convertImageToPng(CameraImage image) async {
+    try {
+      imglib.Image img;
+      if (image.format.group == ImageFormatGroup.yuv420) {
+        img = _convertYUV420(image);
+      } else if (image.format.group == ImageFormatGroup.bgra8888) {
+        img = _convertBGRA8888(image);
+      }
+      imglib.PngEncoder pngEncoder = new imglib.PngEncoder();
+      List<int> png = pngEncoder.encodeImage(img);
+      return png;
+    } catch (e) {
+      print("ERROR");
+    }
+    return null;
+  }
+
+  imglib.Image _convertBGRA8888(CameraImage image) {
+    return imglib.Image.fromBytes(
+      image.width,
+      image.height,
+      image.planes[0].bytes,
+      format: imglib.Format.bgra,
+    );
+  }
+
+  imglib.Image _convertYUV420(CameraImage image) {
+    var img = imglib.Image(image.width, image.height);
+
+    Plane plane = image.planes[0];
+    const int shift = (0xFF << 24);
+
+    for (int x = 0; x < image.width; x++) {
+      for (int planeOffset = 0;
+          planeOffset < image.height * image.width;
+          planeOffset += image.width) {
+        final pixelColor = plane.bytes[planeOffset + x];
+        var newVal =
+            shift | (pixelColor << 16) | (pixelColor << 8) | pixelColor;
+
+        img.data[planeOffset + x] = newVal;
+      }
+    }
+
+    return img;
   }
 
   Future _speak(String str) async {

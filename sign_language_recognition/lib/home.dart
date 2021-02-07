@@ -162,6 +162,7 @@ class _HomePageState extends State<HomePage> {
                               Colors.white.withOpacity(0.05),
                             ])),
                         child: Container(
+                          alignment: Alignment.center,
                           child: Text(
                             "We hope you enjoy our app",
                             style: TextStyle(
@@ -184,10 +185,12 @@ class _HomePageState extends State<HomePage> {
 
   loadModel() async {
     try {
-      String res;
-      res = await Tflite.loadModel(
-        model: 'assets/model_unquant.tflite',
+      await Tflite.loadModel(
+        model: 'assets/Alphabet_Classifier_Lite.tflite',
         labels: "assets/labels.txt",
+        // useGpuDelegate: true,
+        // isAsset: true,
+        // numThreads: 10,
       );
     } catch (e) {
       // print(e);
