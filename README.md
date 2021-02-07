@@ -25,6 +25,12 @@ ability and way of communication. The <i>Market Validation</i> for such a produc
   <li> Model trained over almost 90,000 images collectively </li>
 </ol>
 
+## Data Resources:
+<ol>
+  <li> <a href='https://github.com/ardamavi/Sign-Language-Digits-Dataset'>Turkey Ankara Ayrancı Anadolu High School's Sign Language Digits Dataset</a> (Digits)</li> 
+  <li> <a href='https://www.kaggle.com/grassknoted/asl-alphabet'>ASL Alphabet</a> (Alphabets) </li>
+</ol>
+
 ## Tech Stack Used:
 | Use-Case | Technology |
 | -------- | ---------- |
