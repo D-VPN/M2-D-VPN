@@ -4,7 +4,7 @@
 Build a model to recognize the hand sign-language of deaf and dumb. Live video through mobile/web-cam should recognize the sign language in real time.
 ## <i>Reason / Motivation:</i>
 <p>Right now, in teh world there are more than 38 crore people who are deaf & dumb (we'll address them as specially abled). These people often find themselves amidst a sea
-of loneliness as people often tend to ignore communication with them since their <b>Sign Language</b> is difficult to grasp.</p>
+of loneliness as people often find it difficult to communicate with them since the <b>Sign Language</b> used by them is difficult to grasp.</p>
 
 <p>Also, there are no such app present in the market, that help in, <i>recognising the sign language gestures at real time and translate them for a common user</i>, so that he/she
 can understand a specially abled and also befriend them.</p>
