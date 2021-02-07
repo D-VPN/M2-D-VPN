@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -27,7 +29,6 @@ class _CameraState extends State<Camera> {
   final FlutterTts flutterTts = FlutterTts();
   bool isStart = false;
   int len = 10;
-
   double accuracy;
   List<Response> responses = [];
 
@@ -47,58 +48,13 @@ class _CameraState extends State<Camera> {
 
         cameraController.startImageStream((CameraImage img) async {
           if (!isStart) return;
-
           if (!isDetecting) {
             isDetecting = true;
-            await Future.delayed(Duration(seconds: 2));
-            // Uint8List plane1 = Uint8List.fromList(img.planes[0].bytes.map((i) {
-            //   int result = (i / 255.0).round();
-            //   return result;
-            // }).toList());
-            // Uint8List plane2 = Uint8List.fromList(img.planes[1].bytes.map((i) {
-            //   int result = (i / 255.0).round();
-            //   // print(result);
-            //   return result;
-            // }).toList());
-            // Uint8List plane3 = Uint8List.fromList(img.planes[2].bytes.map((i) {
-            //   int result = (i / 255.0).round();
-            //   return result;
-            // }).toList());
 
-            // Uint8List plane1 = _convertBGRA8888(img, 0);
-            // Uint8List plane2 = _convertBGRA8888(img, 1);
-            // Uint8List plane3 = _convertBGRA8888(img, 2);
+            imglib.Image base = _convertBGRA8888(img, 0);
 
-            // print(plane1.length);
-            // print(plane2.length);
-            // print(plane3.length);
-            // final colorImage = preProcessedImageData(img);
-            // print(colorImage.length);
-
-            print("----Distance-----");
-            // print(plane1.length);
-            // print(plane2.length);
-            // print(plane3.length);
-            // Uint8List plane1 = colorImage.sublist(0, 16384);
-            // Uint8List plane2 = colorImage.sublist(16384, 32768);
-            // Uint8List plane3 = colorImage.sublist(32768, 49152);
-
-            // await Tflite.runModelOnBinary(
-            //   binary: colorImage,
-            // ).then((res) {
-            //   print(res);
-            // });
-            // isDetecting = false;
-            // return;
-            await Tflite.runModelOnFrame(
-              bytesList: [
-                // plane1,
-                // plane2,
-                // plane3,
-                img.planes[0].bytes,
-                img.planes[1].bytes,
-                img.planes[2].bytes,
-              ],
+            Tflite.runModelOnBinary(
+              binary: base.getBytes(format: imglib.Format.luminance),
               asynch: true,
             ).then((recognitions) {
               print(recognitions);
@@ -139,8 +95,18 @@ class _CameraState extends State<Camera> {
                 });
                 print("----End----");
                 setState(() {
-                  label += result;
-                  _speak(result);
+                  if (result == "nothing") {
+                    _speak("nothing");
+                  } else if (result == "del") {
+                    label = label.substring(0, label.length - 1);
+                    _speak("delete");
+                  } else if (result == "space") {
+                    label += " ";
+                    _speak("space");
+                  } else {
+                    label += result;
+                    _speak(result);
+                  }
                   accuracy = 0;
                 });
               }
@@ -151,12 +117,6 @@ class _CameraState extends State<Camera> {
         });
       });
     }
-  }
-
-  Uint8List concatenatePlanes(List<Plane> planes) {
-    final WriteBuffer allBytes = WriteBuffer();
-    planes.forEach((Plane plane) => allBytes.putUint8List(plane.bytes));
-    return allBytes.done().buffer.asUint8List();
   }
 
   @override
@@ -221,16 +181,6 @@ class _CameraState extends State<Camera> {
                             color: Colors.white.withOpacity(0.08),
                           ),
                           color: Colors.white.withOpacity(0.8),
-                          // gradient: LinearGradient(
-                          //   colors: [
-                          //     Color(0xff374ABE).withOpacity(0.5),
-                          //     Color(0xff64B6FF).withOpacity(
-                          //       0.3,
-                          //     )
-                          //   ],
-                          //   begin: Alignment.centerLeft,
-                          //   end: Alignment.centerRight,
-                          // ),
                         ),
                         child: Text(
                           label,
@@ -242,6 +192,17 @@ class _CameraState extends State<Camera> {
                 ),
               );
             }),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).size.height / 2 - 256,
+            left: MediaQuery.of(context).size.width / 5,
+            child: Container(
+              height: 256,
+              width: 256,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(100),
+              ),
+            ),
           ),
           Positioned(
               right: 10,
@@ -290,23 +251,6 @@ class _CameraState extends State<Camera> {
     );
   }
 
-  Future<List<int>> convertImageToPng(CameraImage image) async {
-    try {
-      imglib.Image img;
-      if (image.format.group == ImageFormatGroup.yuv420) {
-        // img = _convertYUV420(image);
-      } else if (image.format.group == ImageFormatGroup.bgra8888) {
-        // img = _convertBGRA8888(image);
-      }
-      imglib.PngEncoder pngEncoder = new imglib.PngEncoder();
-      List<int> png = pngEncoder.encodeImage(img);
-      return png;
-    } catch (e) {
-      print("ERROR");
-    }
-    return null;
-  }
-
   Uint8List preProcessedImageData(CameraImage camImg) {
     final rawRgbImage = convertYUV420toImageColor(camImg);
     final rgbImage = Platform.isAndroid
@@ -316,7 +260,7 @@ class _CameraState extends State<Camera> {
           )
         : rawRgbImage;
     return imglib
-        .copyResizeCropSquare(rgbImage, 128)
+        .copyResize(rgbImage, width: 64, height: 64)
         .getBytes(format: imglib.Format.rgb);
   }
 
@@ -353,14 +297,19 @@ class _CameraState extends State<Camera> {
     return img;
   }
 
-  Uint8List _convertBGRA8888(CameraImage image, int index) {
+  imglib.Image _convertBGRA8888(CameraImage image, int index) {
     var img = imglib.Image.fromBytes(
       image.width,
       image.height,
       image.planes[index].bytes,
-      format: imglib.Format.rgb,
+      format: imglib.Format.luminance,
     );
-    return imglib.copyResize(img, width: 32, height: 32).getBytes();
+    imglib.Image resizedImage = imglib.copyCrop(img, 20, 20, 512, 512);
+    return imglib.copyResize(
+      resizedImage,
+      width: 128,
+      height: 128,
+    );
   }
 
   Uint8List _convertYUV420(CameraImage image, int index) {
