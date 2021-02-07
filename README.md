@@ -25,6 +25,17 @@ ability and way of communication. The <i>Market Validation</i> for such a produc
   <li> Model trained over almost 90,000 images collectively </li>
 </ol>
 
+## Screenshots of the App:
+  HOME PAGE             |   PREDICTIONS | REAL-TIME SENTENCE FORMATION
+:-------------------------:|:-------------------------:|:---------------------:
+![](https://user-images.githubusercontent.com/59571953/107137887-adcd5e80-6936-11eb-9ab3-a6aa14f12336.jpeg)|![](https://user-images.githubusercontent.com/59571953/107137888-ae65f500-6936-11eb-9d51-d6657b95bcd4.jpeg)|![](https://user-images.githubusercontent.com/59571953/107137886-ac9c3180-6936-11eb-9c87-1b6124874489.jpeg)
+
+## Data Resources:
+<ol>
+  <li> <a href='https://github.com/ardamavi/Sign-Language-Digits-Dataset'>Turkey Ankara Ayrancı Anadolu High School's Sign Language Digits Dataset</a> (Digits)</li> 
+  <li> <a href='https://www.kaggle.com/grassknoted/asl-alphabet'>ASL Alphabet</a> (Alphabets) </li>
+</ol>
+
 ## Tech Stack Used:
 | Use-Case | Technology |
 | -------- | ---------- |
