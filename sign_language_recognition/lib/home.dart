@@ -186,7 +186,7 @@ class _HomePageState extends State<HomePage> {
   loadModel() async {
     try {
       await Tflite.loadModel(
-        model: 'assets/Alphabet_Classifier_Lite.tflite',
+        model: 'assets/Alphabet_Classifier__Preprocess_Lite.tflite',
         labels: "assets/labels.txt",
         // useGpuDelegate: true,
         // isAsset: true,
