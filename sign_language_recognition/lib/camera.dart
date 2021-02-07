@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
@@ -46,32 +47,61 @@ class _CameraState extends State<Camera> {
 
         cameraController.startImageStream((CameraImage img) async {
           if (!isStart) return;
-          // print(concatenatePlanes(img.planes).length);
-          // print(img.planes.first.bytes.length);
+
           if (!isDetecting) {
-            // List<int> list = await convertImageToPng(img);
-            // print(list);
-            // print(list.length);
             isDetecting = true;
-            // Tflite.runModelOnBinary(
-            //   binary: list.sublist(0, 49152),
+            await Future.delayed(Duration(seconds: 2));
+            // Uint8List plane1 = Uint8List.fromList(img.planes[0].bytes.map((i) {
+            //   int result = (i / 255.0).round();
+            //   return result;
+            // }).toList());
+            // Uint8List plane2 = Uint8List.fromList(img.planes[1].bytes.map((i) {
+            //   int result = (i / 255.0).round();
+            //   // print(result);
+            //   return result;
+            // }).toList());
+            // Uint8List plane3 = Uint8List.fromList(img.planes[2].bytes.map((i) {
+            //   int result = (i / 255.0).round();
+            //   return result;
+            // }).toList());
+
+            // Uint8List plane1 = _convertBGRA8888(img, 0);
+            // Uint8List plane2 = _convertBGRA8888(img, 1);
+            // Uint8List plane3 = _convertBGRA8888(img, 2);
+
+            // print(plane1.length);
+            // print(plane2.length);
+            // print(plane3.length);
+            // final colorImage = preProcessedImageData(img);
+            // print(colorImage.length);
+
+            print("----Distance-----");
+            // print(plane1.length);
+            // print(plane2.length);
+            // print(plane3.length);
+            // Uint8List plane1 = colorImage.sublist(0, 16384);
+            // Uint8List plane2 = colorImage.sublist(16384, 32768);
+            // Uint8List plane3 = colorImage.sublist(32768, 49152);
+
+            // await Tflite.runModelOnBinary(
+            //   binary: colorImage,
             // ).then((res) {
-            //   print(res.length);
+            //   print(res);
             // });
-            Tflite.runModelOnFrame(
-              bytesList: img.planes.map((plane) {
-                return plane.bytes;
-              }).toList(),
-              imageHeight: img.height,
-              imageWidth: img.width,
+            // isDetecting = false;
+            // return;
+            await Tflite.runModelOnFrame(
+              bytesList: [
+                // plane1,
+                // plane2,
+                // plane3,
+                img.planes[0].bytes,
+                img.planes[1].bytes,
+                img.planes[2].bytes,
+              ],
               asynch: true,
             ).then((recognitions) {
-              print(img.format);
-              print("----Predictions-----");
-              print(recognitions.length);
-              // print(recognitions.reshape());
-              // isDetecting = false;
-              // return;
+              print(recognitions);
               if (!mounted) return;
               if (!isStart) {
                 isDetecting = false;
@@ -140,6 +170,7 @@ class _CameraState extends State<Camera> {
     if (cameraController == null || !cameraController.value.isInitialized) {
       return Container();
     }
+
     return SafeArea(
       child: Stack(
         children: [
@@ -263,9 +294,9 @@ class _CameraState extends State<Camera> {
     try {
       imglib.Image img;
       if (image.format.group == ImageFormatGroup.yuv420) {
-        img = _convertYUV420(image);
+        // img = _convertYUV420(image);
       } else if (image.format.group == ImageFormatGroup.bgra8888) {
-        img = _convertBGRA8888(image);
+        // img = _convertBGRA8888(image);
       }
       imglib.PngEncoder pngEncoder = new imglib.PngEncoder();
       List<int> png = pngEncoder.encodeImage(img);
@@ -276,19 +307,66 @@ class _CameraState extends State<Camera> {
     return null;
   }
 
-  imglib.Image _convertBGRA8888(CameraImage image) {
-    return imglib.Image.fromBytes(
-      image.width,
-      image.height,
-      image.planes[0].bytes,
-      format: imglib.Format.bgra,
-    );
+  Uint8List preProcessedImageData(CameraImage camImg) {
+    final rawRgbImage = convertYUV420toImageColor(camImg);
+    final rgbImage = Platform.isAndroid
+        ? imglib.copyRotate(
+            rawRgbImage,
+            90,
+          )
+        : rawRgbImage;
+    return imglib
+        .copyResizeCropSquare(rgbImage, 128)
+        .getBytes(format: imglib.Format.rgb);
   }
 
-  imglib.Image _convertYUV420(CameraImage image) {
+  imglib.Image convertYUV420toImageColor(CameraImage image) {
+    final int width = image.width;
+    final int height = image.height;
+    final int uvRowStride = image.planes[1].bytesPerRow;
+    final int uvPixelStride = image.planes[1].bytesPerPixel;
+
+    const alpha255 = (0xFF << 24);
+
+    final img = imglib.Image(width, height); // Create Image buffer
+
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        final int uvIndex =
+            uvPixelStride * (x / 2).floor() + uvRowStride * (y / 2).floor();
+        final int index = y * width + x;
+
+        final yp = image.planes[0].bytes[index];
+        final up = image.planes[1].bytes[uvIndex];
+        final vp = image.planes[2].bytes[uvIndex];
+        // Calculate pixel color
+        int r = (yp + vp * 1436 / 1024 - 179).round().clamp(0, 255);
+        int g = (yp - up * 46549 / 131072 + 44 - vp * 93604 / 131072 + 91)
+            .round()
+            .clamp(0, 255);
+        int b = (yp + up * 1814 / 1024 - 227).round().clamp(0, 255);
+        // color: 0x FF  FF  FF  FF
+        //           A   B   G   R
+        img.data[index] = alpha255 | (b << 16) | (g << 8) | r;
+      }
+    }
+    return img;
+  }
+
+  Uint8List _convertBGRA8888(CameraImage image, int index) {
+    var img = imglib.Image.fromBytes(
+      image.width,
+      image.height,
+      image.planes[index].bytes,
+      format: imglib.Format.rgb,
+    );
+    return imglib.copyResize(img, width: 32, height: 32).getBytes();
+  }
+
+  Uint8List _convertYUV420(CameraImage image, int index) {
     var img = imglib.Image(image.width, image.height);
 
-    Plane plane = image.planes[0];
+    Plane plane = image.planes[index];
     const int shift = (0xFF << 24);
 
     for (int x = 0; x < image.width; x++) {
@@ -303,7 +381,7 @@ class _CameraState extends State<Camera> {
       }
     }
 
-    return img;
+    return imglib.copyResize(img, width: 32, height: 32).getBytes();
   }
 
   Future _speak(String str) async {
