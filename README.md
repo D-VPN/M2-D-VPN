@@ -19,7 +19,7 @@ ability and way of communication. The <i>Market Validation</i> for such a produc
 ## Features of Model & App:
 <ol>
   <li> Attractive & User-friendly UI </li>
-  <li> Model Predicts the Entire Sign-Language Alphabet</li>
+  <li> Model Predicts the Entire Sign-Language Alphabets and Digits</li>
   <li> Real-time translation into words/letters</li>
   <li> Voice assistant enabled </li>
   <li> Model trained over almost 90,000 images collectively </li>
