@@ -1,3 +1,6 @@
 .ipynb_checkpoints
 *Dataset*
 *logs*
+tf-model/Alphabet Classifier
+tf-model/Digits Classifier
+tf-model/Digits_Classifier
